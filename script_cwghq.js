@@ -1,4 +1,4 @@
-// ★★★★★ 최종 통합 스크립트 (자동 인식 버전) ★★★★★
+// ★★★★★ 최종 통합 스크립트 (B타입 로직 수정본) ★★★★★
 
 // 이전에 실행된 스크립트의 감시자(Observer)가 있다면 먼저 정리합니다.
 if (window.daouFormObserver) {
@@ -8,14 +8,12 @@ if (window.daouFormObserver) {
 
 var Integration = Backbone.View.extend({
     // --- 공통 보조 함수 ---
-
-    // 빈 결재란에 대각선 그리기
     drawDiagonalLine: function() {
         $(".skip-sign").each(function() {
             var targetCell = $(this);
             if (targetCell.find('.diagonal-line').length === 0) {
                 targetCell.css('position', 'relative');
-                var svgLine = '<div class="diagonal-line" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">' +
+                var svgLine = '<div class="diagonal-line" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">' +
                               '<svg width="100%" height="100%">' +
                               '<line x1="100%" y1="0" x2="0" y2="100%" style="stroke:rgb(0,0,0);stroke-width:0.5" />' +
                               '</svg>' +
@@ -24,7 +22,6 @@ var Integration = Backbone.View.extend({
             }
         });
     },
-    // 인쇄 시 배경색 등이 제대로 나오게 하는 스타일 적용
     applyPrintStyles: function() {
         $('td[style*="background"]').each(function() {
             $(this).css({
@@ -34,10 +31,9 @@ var Integration = Backbone.View.extend({
         });
     },
 
-    // --- 레이아웃 A 로직 (이름 + 도장) ---
+    // --- 레이아웃 A 로직 (기안문: 이름 + 도장) ---
     applyLayoutA: function(signatureBlock) {
         var td = signatureBlock.closest('td');
-        
         td.find('.custom-signature-container, .final-stamp-image').remove();
 
         var name = signatureBlock.find('.sign_name').text().trim();
@@ -49,67 +45,57 @@ var Integration = Backbone.View.extend({
             container.css({
                 'position': 'absolute', 'top': '0', 'left': '0', 'width': '100%', 'height': '100%'
             });
-
             var signatureContent =
                 '<span class="final-name" style="position: absolute; top: 50%; left: 35%; transform: translate(-50%, -50%); font-size: 13pt; font-family: 바탕; letter-spacing: 1px; white-space: nowrap;">' + name + '</span>' +
                 '<img src="' + stampSrc + '" style="position: absolute; top: 50%; left: 75%; transform: translate(-50%, -50%); height: 30px; width: auto; max-width: 100%;">';
-
             container.html(signatureContent);
             td.append(container);
         }
     },
 
-    // --- 레이아웃 B 로직 (도장만 중앙에) ---
+    // --- ★★★ 레이아웃 B 로직 수정 (더 안정적인 '생성' 방식으로 변경) ★★★ ---
     applyLayoutB: function(signatureBlock) {
-        var statusElement = signatureBlock.closest('td').find('.status');
+        var td = signatureBlock.closest('td');
+        var pElement = signatureBlock.closest('p');
+        td.find('.custom-signature-container, .final-stamp-image').remove();
+
         var dateElement = signatureBlock.find('.sign_date');
-        var containerTd = signatureBlock.closest('td');
-        var pElement = containerTd.find('p');
-        
-        containerTd.find('.custom-signature-container, .final-stamp-image').remove();
+        var stampSrc = signatureBlock.find('.sign_stamp img').attr('src');
 
-        if (dateElement.text().trim() !== '' || statusElement.text().trim() !== '') {
-            var isRejected = statusElement.text().includes('반려');
-
-            if (!isRejected) { // 승인 시
-                var stampImg = signatureBlock.find('.sign_stamp img');
-                if (stampImg.length > 0) {
-                    stampImg.detach().addClass('final-stamp-image');
-                    containerTd.append(stampImg);
-                    pElement.hide();
-                }
-                var finalStamp = containerTd.find('.final-stamp-image');
-                containerTd.css('position', 'relative');
-                finalStamp.css({
-                    'position': 'absolute', 'top': '50%', 'left': '50%', 'transform': 'translate(-50%, -50%)',
-                    'max-width': '90%', 'max-height': '90%', 'width': 'auto', 'height': 'auto'
-                });
-            } else { // 반려 시
-                pElement.show();
-                signatureBlock.find('.sign_tit_wrap').show();
-                signatureBlock.find('.sign_stamp').hide();
-                signatureBlock.find('.sign_rank, .sign_name, .sign_date').show();
-            }
-        } else { // 결재 전
+        // 결재가 완료되었고, 반려가 아니며, 도장 이미지가 있을 때
+        if (dateElement.text().trim() !== '' && !signatureBlock.find('.status').text().includes('반려') && stampSrc) {
+            td.css('position', 'relative');
+            var container = $('<div class="custom-signature-container"></div>');
+            container.css({
+                'position': 'absolute', 'top': '0', 'left': '0', 'width': '100%', 'height': '100%'
+            });
+            // 도장 이미지만 새로 만들어서 중앙에 배치
+            var signatureContent =
+                '<img src="' + stampSrc + '" class="final-stamp-image" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90%; max-height: 90%; width: auto; height: auto;">';
+            
+            container.html(signatureContent);
+            td.append(container);
+            pElement.hide();
+        } else {
+             // 결재 전이거나 반려 상태면 원본 숨김
             pElement.hide();
         }
     },
 
     // --- 메인 서명 처리 함수 (라우터) ---
     formatSignatures: function() {
-        // --- 1. 양식 제목을 확인하여 타입 자동 감지 ---
         let detectedFormType = '';
-        const titleText = $('header.content_top h1').text();
-
-        if (titleText.includes('기안')) {
-            detectedFormType = 'A';
-        } else if (titleText.includes('결의')) {
-            detectedFormType = 'B';
+        const headerElement = $('header.content_top');
+        if (headerElement.length > 0) {
+            const titleText = headerElement.text();
+            if (titleText.includes('기안')) {
+                detectedFormType = 'A';
+            } else if (titleText.includes('결의')) {
+                detectedFormType = 'B';
+            }
         }
 
-        // --- 2. 감지된 타입에 따라 로직 실행 ---
         var self = this;
-        // 감지된 경우에만 서명 로직 실행
         if (detectedFormType) {
             $('.sign_type1_inline').each(function() {
                 if (detectedFormType === 'A') {

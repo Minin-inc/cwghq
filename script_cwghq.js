@@ -1,4 +1,4 @@
-// ★★★★★ 최종 통합 스크립트 (B타입 로직 수정본) ★★★★★
+// ★★★★★ 최종 통합 스크립트 (일반 스크립트 버전) ★★★★★
 
 // 이전에 실행된 스크립트의 감시자(Observer)가 있다면 먼저 정리합니다.
 if (window.daouFormObserver) {
@@ -46,14 +46,14 @@ var Integration = Backbone.View.extend({
                 'position': 'absolute', 'top': '0', 'left': '0', 'width': '100%', 'height': '100%'
             });
             var signatureContent =
-                '<span class="final-name" style="position: absolute; top: 50%; left: 35%; transform: translate(-50%, -50%); font-size: 13pt; font-family: 바탕; letter-spacing: 1px; white-space: nowrap;">' + name + '</span>' +
-                '<img src="' + stampSrc + '" style="position: absolute; top: 50%; left: 75%; transform: translate(-50%, -50%); height: 30px; width: auto; max-width: 100%;">';
+                '<span class="final-name" style="position: absolute; top: 50%; left: 30%; transform: translate(-50%, -50%); font-size: 13pt; font-family: 바탕; letter-spacing: 1px; white-space: nowrap;">' + name + '</span>' +
+                '<img src="' + stampSrc + '" style="position: absolute; top: 50%; left: 70%; transform: translate(-50%, -50%); height: 30px; width: auto; max-width: 100%;">';
             container.html(signatureContent);
             td.append(container);
         }
     },
 
-    // --- ★★★ 레이아웃 B 로직 수정 (더 안정적인 '생성' 방식으로 변경) ★★★ ---
+    // --- 레이아웃 B 로직 (결의서: 도장만 중앙에) ---
     applyLayoutB: function(signatureBlock) {
         var td = signatureBlock.closest('td');
         var pElement = signatureBlock.closest('p');
@@ -62,14 +62,12 @@ var Integration = Backbone.View.extend({
         var dateElement = signatureBlock.find('.sign_date');
         var stampSrc = signatureBlock.find('.sign_stamp img').attr('src');
 
-        // 결재가 완료되었고, 반려가 아니며, 도장 이미지가 있을 때
         if (dateElement.text().trim() !== '' && !signatureBlock.find('.status').text().includes('반려') && stampSrc) {
             td.css('position', 'relative');
             var container = $('<div class="custom-signature-container"></div>');
             container.css({
                 'position': 'absolute', 'top': '0', 'left': '0', 'width': '100%', 'height': '100%'
             });
-            // 도장 이미지만 새로 만들어서 중앙에 배치
             var signatureContent =
                 '<img src="' + stampSrc + '" class="final-stamp-image" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90%; max-height: 90%; width: auto; height: auto;">';
             
@@ -77,7 +75,6 @@ var Integration = Backbone.View.extend({
             td.append(container);
             pElement.hide();
         } else {
-             // 결재 전이거나 반려 상태면 원본 숨김
             pElement.hide();
         }
     },
@@ -128,19 +125,12 @@ var Integration = Backbone.View.extend({
         }, 200);
     },
     
-    render: function() {
-        var self = this;
-        setTimeout(function() { self.formatSignatures(); self.drawDiagonalLine(); self.applyPrintStyles(); }, 200);
-    },
-    renderViewMode: function() {
-        var self = this;
-        setTimeout(function() { self.formatSignatures(); self.drawDiagonalLine(); self.applyPrintStyles(); }, 200);
-    },
-    afterSave: function() {
-        var self = this;
-        setTimeout(function() { self.formatSignatures(); self.drawDiagonalLine(); self.applyPrintStyles(); }, 200);
-    },
+    render: function() { /* ...생략... */ },
+    renderViewMode: function() { /* ...생략... */ },
+    afterSave: function() { /* ...생략... */ },
     onEditDocument: function() {}, beforeSave: function() {}, validate: function() { return true; }, getDocVariables: function() {}
 });
 
-return Integration;
+// ★★★★★ 변경된 부분 ★★★★★
+// return Integration;  // 이 줄을 삭제하고,
+new Integration();      // 이 줄을 추가하여 스크립트가 스스로 실행되도록 합니다.

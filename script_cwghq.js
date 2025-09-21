@@ -190,5 +190,6 @@ window.Integration = Backbone.View.extend({
     onEditDocument: function() {}, beforeSave: function() {}, validate: function() { return true; }, getDocVariables: function() {}
 });
 
-return Integration;
+//return Integration;
+
 

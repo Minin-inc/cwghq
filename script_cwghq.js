@@ -190,5 +190,4 @@ var Integration = Backbone.View.extend({
     onEditDocument: function() {}, beforeSave: function() {}, validate: function() { return true; }, getDocVariables: function() {}
 });
 
-// window.Integration = Integration; // <-- 이 한 줄을 추가!
-
+return Integration;

@@ -6,7 +6,7 @@ if (window.daouFormObserver) {
     console.log('통합 스크립트: 이전 감시자를 정리했습니다.');
 }
 
-window.Integration = Backbone.View.extend({
+var Integration = Backbone.View.extend({
     // --- 추가된 함수: 에디터 기본 스타일 설정 ---
     setDefaultEditorStyles: function() {
         // 1. 에디터를 포함하는 <td>의 수직 정렬을 'top'으로 변경
@@ -189,3 +189,5 @@ window.Integration = Backbone.View.extend({
     },
     onEditDocument: function() {}, beforeSave: function() {}, validate: function() { return true; }, getDocVariables: function() {}
 });
+
+window.Integration = Integration; // <-- 이 한 줄을 추가!
